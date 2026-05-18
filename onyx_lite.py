@@ -27,7 +27,7 @@ DEFAULT_CONFIG = {
 }
 
 NAME = "Onyx"
-MODEL = "gemma2:2b"
+MODEL = "onyx"
 HOST = "http://localhost:11434"
 THEME = "violet"
 
