@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-✦ Onyx Lite — Minimal agent. One file, stdlib only.
+✦ Onyx Lite - Minimal agent. One file, stdlib only.
 
 Usage:
     python3 onyx_lite.py          Start interactive chat
@@ -66,7 +66,7 @@ def save_config():
 
 def run_setup():
     global NAME, MODEL, HOST
-    print(f"\n{C.V}✦ Onyx Lite — Setup{C.N}\n")
+    print(f"\n{C.V}✦ Onyx Lite - Setup{C.N}\n")
     inp = input(f"  Agent name [{NAME}]: ").strip()
     if inp: NAME = inp
     inp = input(f"  Ollama model [{MODEL}]: ").strip()
@@ -267,11 +267,11 @@ def chat_loop():
             skill_result = process_skills(response)
 
             if skill_result == response:
-                # No skill calls — final answer
+                # No skill calls - final answer
                 final = response
                 break
 
-            # Skill was used — feed result back
+            # Skill was used - feed result back
             messages.append({"role": "assistant", "content": response})
             msgs = messages.copy()
             msgs.append({"role": "user",
