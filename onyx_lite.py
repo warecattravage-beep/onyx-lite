@@ -196,16 +196,20 @@ def process_skills(response: str) -> str:
 
 # ── Chat ──
 
-def build_messages(text: str, history: list) -> list[dict]:
+def build_messages(text: str, history: list, system_extra: str = "") -> list[dict]:
     skills_list = ", ".join(SKILLS)
     system = (
         f"You are {NAME}, a helpful AI assistant.\n"
+        f"You have up to 10 reasoning steps to complete tasks.\n"
         f"Available: @terminal(command), @coding(code, language)\n"
-        f"Be concise. Use skills when needed.\n"
+        f"When you need to do something, use a skill. After it runs, continue.\n"
+        f"When done, give a final answer.\n"
         f"Personality: Helpful, efficient."
     )
+    if system_extra:
+        system += f"\n{system_extra}"
     msgs = [{"role": "system", "content": system}]
-    for h in history[-6:]:
+    for h in history[-10:]:
         msgs.append(h)
     msgs.append({"role": "user", "content": text})
     return msgs
@@ -250,25 +254,51 @@ def chat_loop():
             continue
 
         # Show typing effect
-        print(f"  {C.D}...{C.N}", end="", flush=True)
+        sys.stdout.write(f"  {C.D}...{C.N}")
+        sys.stdout.flush()
 
+        # Autonomous loop
         messages = build_messages(text, history)
-        response = chat_ollama(messages)
-        final = process_skills(response)
+        final = ""
+        max_steps = 10
 
-        # If skills returned something, send it back to model
-        if final != response:
-            history.append({"role": "user", "content": text})
-            history.append({"role": "assistant", "content": response})
-            messages2 = build_messages(f"Tool result:\n{final}\n\nSummarize.", history[-4:])
-            final = chat_ollama(messages2)
-            print("\r  ", end="")
+        for step in range(max_steps):
+            response = chat_ollama(messages)
+            skill_result = process_skills(response)
+
+            if skill_result == response:
+                # No skill calls — final answer
+                final = response
+                break
+
+            # Skill was used — feed result back
+            messages.append({"role": "assistant", "content": response})
+            msgs = messages.copy()
+            msgs.append({"role": "user",
+                "content": f"Result:\n{skill_result[:1500]}\n\nProceed."})
+            response2 = chat_ollama(msgs)
+            skill2 = process_skills(response2)
+            if skill2 == response2:
+                final = response2
+                break
+            else:
+                messages.append({"role": "assistant", "content": response2})
+                messages.append({"role": "user",
+                    "content": f"Result: {skill2[:1500]}\n\nProceed."})
+                response3 = chat_ollama(messages)
+                final = response3
+                break
+
+        if not final:
+            final = "(Done)"
 
         history.append({"role": "user", "content": text})
         history.append({"role": "assistant", "content": final})
 
-        # Print response
-        print(f"\r  {C.G}✦{C.N} {final}")
+        # Clear typing and print
+        sys.stdout.write("\r  ")
+        sys.stdout.flush()
+        print(f"  {C.G}✦{C.N} {final}")
         print()
 
 
